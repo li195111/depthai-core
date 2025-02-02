@@ -31,6 +31,12 @@ void XLinkInHost::disconnect() {
     isWaitingForReconnect.notify_all();
 }
 
+
+// Reads int from little endian format
+inline int readIntLE(uint8_t* data) {
+    return data[0] + data[1] * 256 + data[2] * 256 * 256 + data[3] * 256 * 256 * 256;
+}
+
 void XLinkInHost::run() {
     // Create a stream for the connection
     bool reconnect = true;
@@ -41,6 +47,17 @@ void XLinkInHost::run() {
             try {
                 // Blocking -- parse packet and gather timing information
                 auto packet = stream.readMove();
+
+                const std::uint32_t debug_packet_length = packet.length - 16;
+                const DatatypeEnum object_type = static_cast<DatatypeEnum>(readIntLE(packet.data + debug_packet_length - 8));
+
+                if(object_type == DatatypeEnum::Tracklets) {
+                    logger::info("Received Tracklets message");
+                    std::vector<uint8_t> tracklet_data(packet.data, packet.data + 88);
+                    logger::info("Tracklet data: {}", spdlog::to_hex(tracklet_data));
+                    logger::info("Byte 34: {}", tracklet_data[34]);
+                }   
+
                 const auto t1Parse = std::chrono::steady_clock::now();
                 const auto msg = StreamMessageParser::parseMessage(std::move(packet));
                 if(std::dynamic_pointer_cast<MessageGroup>(msg) != nullptr) {
