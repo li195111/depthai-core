@@ -9,6 +9,7 @@
 
 // libraries
 #include "depthai/pipeline/datatype/MessageGroup.hpp"
+#include "depthai/pipeline/datatype/Tracklets.hpp"
 #include "utility/Logging.hpp"
 
 namespace dai {
@@ -52,10 +53,11 @@ void XLinkInHost::run() {
                 const DatatypeEnum object_type = static_cast<DatatypeEnum>(readIntLE(packet.data + debug_packet_length - 8));
 
                 if(object_type == DatatypeEnum::Tracklets) {
+                    logger::info("SECTION 1");
                     logger::info("Received Tracklets message");
                     std::vector<uint8_t> tracklet_data(packet.data, packet.data + 88);
                     logger::info("Tracklet data: {}", spdlog::to_hex(tracklet_data));
-                    logger::info("Byte 34: {}", tracklet_data[34]);
+                    logger::info("Byte 34: {}", tracklet_data[33]);
                 }   
 
                 const auto t1Parse = std::chrono::steady_clock::now();
@@ -67,6 +69,20 @@ void XLinkInHost::run() {
                         msg.second = StreamMessageParser::parseMessage(&dpacket);
                     }
                 }
+
+                if(std::dynamic_pointer_cast<Tracklets>(msg) != nullptr) {
+                    logger::info("SECTION 2");
+                    logger::info("Received Tracklets message");
+                    auto tracklets = std::static_pointer_cast<Tracklets>(msg);  
+                    for(auto& tracklet : tracklets->tracklets) {
+                        logger::info("Tracklet ID: {}", tracklet.id);
+                        logger::info("Tracklet label: {}", tracklet.label);
+                        logger::info("Tracklet age: {}", tracklet.age);
+                        logger::info("Tracklet status: {}", static_cast<std::int32_t>(tracklet.status));
+                    }
+                    logger::info("--------------------------------");
+                }
+
                 const auto t2Parse = std::chrono::steady_clock::now();
 
                 // Trace level debugging
