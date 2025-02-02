@@ -69,4 +69,19 @@ void bind_tracklets(pybind11::module& m, void* pCallstack) {
         // .def("setTimestampDevice", &Tracklets::setTimestampDevice, DOC(dai, Tracklets, setTimestampDevice))
         // .def("setSequenceNum", &Tracklets::setSequenceNum, DOC(dai, Tracklets, setSequenceNum))
         ;
+
+    tracklets.def("serialize", [](Tracklets& o) {
+        std::vector<std::uint8_t> data;
+        DatatypeEnum datatype;
+        o.serialize(data, datatype);
+        return data;
+    });
+
+    m.def("deserialize", [](std::vector<std::uint8_t>& data) {
+        Tracklets o;
+        DatatypeEnum datatype;
+        dai::utility::deserialize<dai::SerializationType::LIBNOP>(data, o);
+        return o;
+    });
+
 }
