@@ -44,6 +44,9 @@
 #include "depthai/pipeline/datatype/DatatypeEnum.hpp"
 #include "depthai/utility/Serialization.hpp"
 #include "utility/SharedMemory.hpp"
+#include "utility/Logging.hpp"
+#include "spdlog/fmt/bin_to_hex.h"
+
 #include "utility/VectorMemory.hpp"
 #include "xlink/XLinkStream.hpp"
 
@@ -63,8 +66,12 @@ template <class T>
 inline std::shared_ptr<T> parseDatatype(std::uint8_t* metadata, size_t size, std::vector<uint8_t>& data, long fd) {
     auto tmp = std::make_shared<T>();
 
+    logger::info("DBG5 parseDatatype");
+    logger::info("DBG6 metadata: {}", spdlog::to_hex(metadata, metadata + size));
+
     // deserialize
     utility::deserialize(metadata, size, *tmp);
+    logger::info("DBG7 size: {}", size);
     if(fd < 0) {
         tmp->data = std::make_shared<dai::VectorMemory>(std::move(data));
     } else {
@@ -119,11 +126,19 @@ std::shared_ptr<ADatatype> StreamMessageParser::parseMessage(streamPacketDesc_t*
     size_t serializedObjectSize;
     size_t bufferLength;
     long fd;
+    logger::info("DBG1 StreamMessageParser::parseMessage");
     std::tie(objectType, serializedObjectSize, bufferLength) = parseHeader(packet);
     auto* const metadataStart = packet->data + bufferLength;
+    logger::info("DBG2 StreamMessageParser::parseMessage");
+    logger::info("Object type: {} | Serialized object size: {} | Buffer length: {}", objectType, serializedObjectSize, bufferLength);
+
 
     // copy data part
     std::vector<uint8_t> data(packet->data, packet->data + bufferLength);
+
+    // print data part
+    logger::info("DBG3 StreamMessageParser::parseMessage");
+    logger::info("DBG4 Data part: {}", spdlog::to_hex(data));
 
     fd = packet->fd;
 
