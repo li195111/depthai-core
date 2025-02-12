@@ -71,6 +71,20 @@ inline std::shared_ptr<T> parseDatatype(std::uint8_t* metadata, size_t size, std
 
     // deserialize
     utility::deserialize(metadata, size, *tmp);
+
+    if(dynamic_cast<Tracklets*>(tmp.get()) != nullptr) {
+        logger::info("SECTION 55");
+        logger::info("Received Tracklets message");
+        auto tracklets = dynamic_cast<Tracklets*>(tmp.get());  
+        for(auto& tracklet : tracklets->tracklets) {
+                logger::info("Tracklet ID: {}", tracklet.id);
+                logger::info("Tracklet label: {}", tracklet.label);
+                logger::info("Tracklet age: {}", tracklet.age);
+                logger::info("Tracklet status: {}", static_cast<std::int32_t>(tracklet.status));
+            }
+        logger::info("--------------------------------");
+    }
+
     logger::info("DBG7 size: {}", size);
     if(fd < 0) {
         tmp->data = std::make_shared<dai::VectorMemory>(std::move(data));
