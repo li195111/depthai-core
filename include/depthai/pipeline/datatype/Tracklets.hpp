@@ -52,8 +52,8 @@ struct Tracklet {
      * Spatial coordinates of tracklet.
      */
     Point3f spatialCoordinates;
-    DEPTHAI_SERIALIZE(Tracklet, roi, id, label, age, status, srcImgDetection, spatialCoordinates);
 };
+DEPTHAI_SERIALIZE_EXT(Tracklet, roi, id, label, age, status, srcImgDetection, spatialCoordinates);
 
 /**
  * Tracklets message. Carries object tracking information.
