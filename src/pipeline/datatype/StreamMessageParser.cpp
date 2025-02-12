@@ -130,7 +130,7 @@ std::shared_ptr<ADatatype> StreamMessageParser::parseMessage(streamPacketDesc_t*
     std::tie(objectType, serializedObjectSize, bufferLength) = parseHeader(packet);
     auto* const metadataStart = packet->data + bufferLength;
     logger::info("DBG2 StreamMessageParser::parseMessage");
-    logger::info("Object type: {} | Serialized object size: {} | Buffer length: {}", objectType, serializedObjectSize, bufferLength);
+    logger::info("Object type: {} | Serialized object size: {} | Buffer length: {}", (int)objectType, serializedObjectSize, bufferLength);
 
 
     // copy data part
