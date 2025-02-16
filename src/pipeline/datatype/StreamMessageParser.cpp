@@ -76,6 +76,9 @@ inline std::shared_ptr<T> parseDatatype(std::uint8_t* metadata, size_t size, std
     std::string typeName = typeid(T).name();
     logger::info("DBG8 typeName: {}", typeName);
 
+    std::string typeName2 = typeid(dai::Tracklet).name();
+    logger::info("DBG9 typeName2: {}", typeName2);
+
     if(dynamic_cast<Tracklets*>(tmp.get()) != nullptr) {
         logger::info("SECTION 55");
         logger::info("Received Tracklets message");
