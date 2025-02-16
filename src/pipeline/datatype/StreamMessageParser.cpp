@@ -72,6 +72,10 @@ inline std::shared_ptr<T> parseDatatype(std::uint8_t* metadata, size_t size, std
     // deserialize
     utility::deserialize(metadata, size, *tmp);
 
+    // Get T name
+    std::string typeName = typeid(T).name();
+    logger::info("DBG8 typeName: {}", typeName);
+
     if(dynamic_cast<Tracklets*>(tmp.get()) != nullptr) {
         logger::info("SECTION 55");
         logger::info("Received Tracklets message");
@@ -229,6 +233,7 @@ std::shared_ptr<ADatatype> StreamMessageParser::parseMessage(streamPacketDesc_t*
             break;
 
         case DatatypeEnum::Tracklets:
+            logger::info("Parsing Tracklets");
             return parseDatatype<Tracklets>(metadataStart, serializedObjectSize, data, fd);
             break;
 
