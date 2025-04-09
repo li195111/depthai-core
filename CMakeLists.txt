@@ -266,6 +266,7 @@ if(GIT_FOUND)
         ERROR_QUIET
         OUTPUT_STRIP_TRAILING_WHITESPACE
     )
+    message(STATUS "Found GIT: ${GIT_EXECUTABLE}")
 endif()
 
 ### Get and find dependencies
