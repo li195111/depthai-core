@@ -21,7 +21,7 @@ jobs:
 
       - name: Install git
         run: |
-          dnf install -y git
+          dnf install -y git which
           git --version # Verify git is installed and in PATH
           which git # Verify git is in PATH
 
