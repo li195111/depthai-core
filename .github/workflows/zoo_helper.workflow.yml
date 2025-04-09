@@ -20,7 +20,11 @@ jobs:
           key: hunter-almalinux-8-v3-develop-x86_64
 
       - name: Install git
-        run: dnf install -y git
+        run: |
+          dnf install -y git
+          git --version # Verify git is installed and in PATH
+          which git # Verify git is in PATH
+
 
       - name: Export GitHub Actions cache environment variables
         uses: actions/github-script@v7
