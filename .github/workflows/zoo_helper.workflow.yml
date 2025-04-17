@@ -39,7 +39,7 @@ jobs:
           dnf install -y pkgconf-pkg-config bison autoconf libtool libXi-devel libXtst-devel cmake zip perl-core python39
           dnf install -y libXrandr-devel libX11-devel libXft-devel libXext-devel flex systemd-devel
           dnf install -y gcc-c++ automake libtool-ltdl-devel wget
-          wget https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.gz && tar -xzf nasm-2.16.01.tar.gz && cd nasm-2.16.01 && ./configure && make && make install && cd .. # install nasm - build from source
+          wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.15.04.tar.gz && tar -xzf nasm-2.15.04.tar.gz && cd nasm-nasm-2.15.04 && autogen.sh && ./configure && make && make install && cd .. # install nasm - build from source
           pip3 install jinja2
 
       - name: Configure project
@@ -95,7 +95,7 @@ jobs:
           dnf install -y pkgconf-pkg-config bison autoconf libtool libXi-devel libXtst-devel cmake git zip perl-core python39
           dnf install -y libXrandr-devel libX11-devel libXft-devel libXext-devel flex systemd-devel
           dnf install -y gcc-c++ automake libtool-ltdl-devel wget
-          wget https://www.nasm.us/pub/nasm/releasebuilds/2.16.01/nasm-2.16.01.tar.gz && tar -xzf nasm-2.16.01.tar.gz && cd nasm-2.16.01 && ./configure && make && make install && cd .. # install nasm - build from source
+          wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.15.04.tar.gz && tar -xzf nasm-2.15.04.tar.gz && cd nasm-nasm-2.15.04 && autogen.sh && ./configure && make && make install && cd .. # install nasm - build from source
           pip3 install jinja2
           pip3 install ninja # ninja is needed for cmake on arm64
 
