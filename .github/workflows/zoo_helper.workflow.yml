@@ -47,6 +47,11 @@ jobs:
           git config --global --add safe.directory $(pwd)
           cmake -S . -B build -DDEPTHAI_ENABLE_CURL=ON -DCMAKE_BUILD_TYPE=MinSizeRel
 
+      - name: Print out vcpkg logs if building port fails
+        if: failure()    # Only run this if the build step fails
+        run: bash bindings/python/ci/show_vcpkg_logs.sh
+
+
       - name: Build zoo_helper
         run: cmake --build build --target zoo_helper --parallel 4
 
