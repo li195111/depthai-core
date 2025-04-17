@@ -98,6 +98,10 @@ jobs:
           wget https://github.com/netwide-assembler/nasm/archive/refs/tags/nasm-2.15.04.tar.gz && tar -xzf nasm-2.15.04.tar.gz && cd nasm-nasm-2.15.04 && ./autogen.sh && ./configure && make && make install && cd .. # install nasm - build from source
           pip3 install jinja2
           pip3 install ninja # ninja is needed for cmake on arm64
+      
+      - name: Print out vcpkg logs if building port fails
+        if: failure()    # Only run this if the build step fails
+        run: bash bindings/python/ci/show_vcpkg_logs.sh
 
       - name: Configure project
         run: |
