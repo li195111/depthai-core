@@ -323,7 +323,7 @@ dai_add_example(visualizer_yolo Visualizer/visualizer_yolo.cpp ON OFF)
 dai_set_example_test_labels(visualizer_yolo ondevice rvc2_all rvc4)
 
 include(FetchContent)
-FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.16.1/rerun_cpp_sdk.zip)
+FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.23.2/rerun_cpp_sdk.zip)
 FetchContent_MakeAvailable(rerun_sdk)
 dai_add_example(rgbd RGBD/rgbd.cpp ON OFF)
 target_link_libraries(rgbd PRIVATE rerun_sdk)
@@ -333,7 +333,7 @@ dai_add_example(visualizer_rgbd_autocreate RGBD/visualizer_rgbd_autocreate.cpp O
 
 if(DEPTHAI_RTABMAP_SUPPORT)
     include(FetchContent)
-    FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.16.1/rerun_cpp_sdk.zip)
+    FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.23.2/rerun_cpp_sdk.zip)
     FetchContent_MakeAvailable(rerun_sdk)
     dai_add_example(rtabmap_vio RVC2/VSLAM/rtabmap_vio.cpp OFF OFF)
     target_link_libraries(rtabmap_vio PRIVATE depthai::rtabmap rerun_sdk)
@@ -351,7 +351,7 @@ endif()
 
 if(DEPTHAI_BASALT_SUPPORT)
     include(FetchContent)
-    FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.16.1/rerun_cpp_sdk.zip)
+    FetchContent_Declare(rerun_sdk URL  https://github.com/rerun-io/rerun/releases/download/0.23.2/rerun_cpp_sdk.zip)
     FetchContent_MakeAvailable(rerun_sdk)
 
     dai_add_example(basalt_vio RVC2/VSLAM/basalt_vio.cpp OFF OFF)
