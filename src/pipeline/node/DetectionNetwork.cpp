@@ -13,7 +13,6 @@
 #include "depthai/depthai.hpp"
 #include "depthai/modelzoo/Zoo.hpp"
 #include "depthai/nn_archive/NNArchive.hpp"
-#include "modelzoo/NNModelDescription.hpp"
 #include "nn_archive/NNArchiveVersionedConfig.hpp"
 #include "pipeline/DeviceNodeGroup.hpp"
 #include "utility/ArchiveUtil.hpp"
@@ -68,6 +67,7 @@ std::shared_ptr<DetectionNetwork> DetectionNetwork::build(const std::shared_ptr<
     return std::static_pointer_cast<DetectionNetwork>(shared_from_this());
 }
 
+#ifdef DEPTHAI_HAVE_OPENCV_SUPPORT
 std::shared_ptr<DetectionNetwork> DetectionNetwork::build(const std::shared_ptr<ReplayVideo>& input, NNModelDescription modelDesc, std::optional<float> fps) {
     auto nnArchive = createNNArchive(modelDesc);
     return build(input, nnArchive, fps);
@@ -77,6 +77,8 @@ std::shared_ptr<DetectionNetwork> DetectionNetwork::build(const std::shared_ptr<
     detectionParser->setNNArchive(nnArchive);
     return std::static_pointer_cast<DetectionNetwork>(shared_from_this());
 }
+#endif
+
 NNArchive DetectionNetwork::createNNArchive(NNModelDescription& modelDesc) {
     // Download model from zoo
     if(modelDesc.platform.empty()) {

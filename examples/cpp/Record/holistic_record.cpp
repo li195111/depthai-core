@@ -4,7 +4,7 @@
 #include "depthai/depthai.hpp"
 #include "depthai/pipeline/node/host/Display.hpp"
 #include "depthai/utility/RecordReplay.hpp"
-
+#include "utility.hpp"
 #ifndef DEPTHAI_MERGED_TARGET
     #error This example needs OpenCV support, which is not available on your system
 #endif

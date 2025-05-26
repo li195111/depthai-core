@@ -3,6 +3,7 @@
 #include "depthai/capabilities/ImgFrameCapability.hpp"
 #include "depthai/common/CameraBoardSocket.hpp"
 #include "depthai/pipeline/node/host/Record.hpp"
+#include "utility.hpp"
 
 #ifndef DEPTHAI_HAVE_OPENCV_SUPPORT
     #error This example needs OpenCV support, which is not available on your system
