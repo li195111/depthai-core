@@ -33,9 +33,9 @@
     #undef ON
 #endif
 #ifdef DEPTHAI_XTENSOR_SUPPORT
-    #include "xtensor/xadapt.hpp"
-    #include "xtensor/xarray.hpp"
-    #include "xtensor/xmanipulation.hpp"
+    #include "xtensor/containers/xadapt.hpp"
+    #include "xtensor/containers/xarray.hpp"
+    #include "xtensor/misc/xmanipulation.hpp"
 #endif
 #if defined(_ON_DEF)
     #define ON _ON_DEF
@@ -445,7 +445,7 @@ class NNData : public Buffer {
             }
         } else if(dataType == dai::TensorInfo::DataType::FP64) {
             for(uint32_t i = 0; i < tensor.size(); i++) {
-                *(double*)(&vecData->data()[8 * i + offset]) = tensor.data()[i];
+                *(double*)(&vecData->data()[8 * i + offset]) = static_cast<double>(tensor.data()[i]);
             }
         }
 

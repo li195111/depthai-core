@@ -23,12 +23,64 @@
             "default-features": false
         },
         {
-          "name": "vcpkg-cmake",
-          "host": true
+            "name": "vcpkg-cmake",
+            "host": true
         },
         {
-          "name": "vcpkg-cmake-config",
-          "host": true
+            "name": "vcpkg-cmake-config",
+            "host": true
+        },
+        {
+            "name": "libusb",
+            "version>=": "1.0.28"
+        },
+        {
+            "name": "protobuf",
+            "version>=": "5.29.3"
+        },
+        {
+            "name": "boost"
+        },
+        {
+            "name": "opencv4",
+            "default-features": false,
+            "features": [
+                "calib3d",
+                "highgui",
+                "png",
+                "quirc",
+                "tiff",
+                "webp",
+                "ffmpeg"
+            ]
+        },
+        {
+            "name": "opencv4",
+            "default-features": false,
+            "features": [
+                "gtk"
+            ],
+            "platform": "linux & !arm"
+        },
+        {
+            "name": "opencv4",
+            "default-features": false,
+            "features": [
+                "win32ui"
+            ],
+            "platform": "windows"
+        },
+        {
+            "name": "ffmpeg",
+            "features": [
+                "openh264"
+            ]
+        },
+        {
+            "name": "websocketpp"
+        },
+        {
+            "name": "libnop"
         }
     ],
     "features": {

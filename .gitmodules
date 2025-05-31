@@ -3,13 +3,13 @@
 	url = ../depthai-bootloader-shared.git
 [submodule "3rdparty/xtensor"]
 	path = 3rdparty/xtensor
-	url = https://github.com/xtensor-stack/xtensor
+	url = https://github.com/li195111/xtensor.git
 [submodule "3rdparty/xtl"]
 	path = 3rdparty/xtl
-	url = https://github.com/xtensor-stack/xtl
+	url = https://github.com/li195111/xtl.git
 [submodule "bindings/python/external/xtensor-python"]
 	path = bindings/python/external/xtensor-python
-	url = https://github.com/xtensor-stack/xtensor-python.git
+	url = https://github.com/li195111/xtensor-python.git
 [submodule "3rdparty/pybind11_opencv_numpy"]
 	path = bindings/python/external/pybind11_opencv_numpy
 	url = https://github.com/luxonis/pybind11_opencv_numpy.git

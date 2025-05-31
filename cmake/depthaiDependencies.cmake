@@ -84,15 +84,15 @@ if(DEPTHAI_XTENSOR_SUPPORT)
     if(NOT DEPTHAI_XTENSOR_EXTERNAL)
         FetchContent_Declare(
             xtl
-            GIT_REPOSITORY https://github.com/xtensor-stack/xtl.git
-            GIT_TAG        0.7.6
+            GIT_REPOSITORY https://github.com/li195111/xtl.git
+            GIT_TAG        0.8.0
             GIT_SHALLOW    TRUE
         )
 
         FetchContent_Declare(
             xtensor
-            GIT_REPOSITORY https://github.com/xtensor-stack/xtensor.git
-            GIT_TAG        0.25.0
+            GIT_REPOSITORY https://github.com/li195111/xtensor.git
+            GIT_TAG        yfli-0.26.1
             GIT_SHALLOW    TRUE
         )
         FetchContent_MakeAvailable(xtl xtensor)
