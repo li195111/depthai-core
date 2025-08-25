@@ -51,7 +51,7 @@ struct ObjectTrackerProperties : PropertiesSerializable<Properties, ObjectTracke
     /**
      * Tracking method.
      */
-    TrackerType trackerType = TrackerType::ZERO_TERM_IMAGELESS;
+    TrackerType trackerType = TrackerType::SHORT_TERM_IMAGELESS;
     /**
      * New ID assignment policy.
      */
@@ -60,9 +60,29 @@ struct ObjectTrackerProperties : PropertiesSerializable<Properties, ObjectTracke
      * Whether tracker should take into consideration class label for tracking.
      */
     bool trackingPerClass = true;
+    /**
+     * Occlusion ratio threshold. Used to filter out overlapping tracklets.
+     */
+    float occlusionRatioThreshold = 0.2f;
+    /**
+     * Tracklet lifespan in number of frames. Number of frames after which a LOST tracklet is removed.
+     */
+    uint32_t trackletMaxLifespan = 120;
+    /**
+     * Tracklet birth threshold. Minimum consecutive tracked frames required to consider a tracklet as a new instance.
+     */
+    uint32_t trackletBirthThreshold = 3;
 };
 
-DEPTHAI_SERIALIZE_EXT(
-    ObjectTrackerProperties, trackerThreshold, maxObjectsToTrack, detectionLabelsToTrack, trackerType, trackerIdAssignmentPolicy, trackingPerClass);
+DEPTHAI_SERIALIZE_EXT(ObjectTrackerProperties,
+                      trackerThreshold,
+                      maxObjectsToTrack,
+                      detectionLabelsToTrack,
+                      trackerType,
+                      trackerIdAssignmentPolicy,
+                      trackingPerClass,
+                      occlusionRatioThreshold,
+                      trackletMaxLifespan,
+                      trackletBirthThreshold);
 
 }  // namespace dai

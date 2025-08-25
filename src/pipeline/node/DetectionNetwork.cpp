@@ -41,13 +41,10 @@ void DetectionNetwork::buildInternal() {
     // Default confidence threshold
     detectionParser->properties.parser.confidenceThreshold = 0.5;
     neuralNetwork->out.link(detectionParser->input);
-    neuralNetwork->passthrough.link(detectionParser->imageIn);
 
     // No "internal" buffering to keep interface similar to monolithic nodes
     detectionParser->input.setBlocking(true);
     detectionParser->input.setMaxSize(1);
-    detectionParser->imageIn.setBlocking(false);
-    detectionParser->imageIn.setMaxSize(1);
 }
 
 std::shared_ptr<DetectionNetwork> DetectionNetwork::build(Node::Output& input, const NNArchive& nnArchive) {
@@ -167,7 +164,7 @@ void DetectionNetwork::setNNArchiveOther(const NNArchive& nnArchive) {
     neuralNetwork->setNNArchive(nnArchive);
 }
 
-void DetectionNetwork::setBlobPath(const dai::Path& path) {
+void DetectionNetwork::setBlobPath(const std::filesystem::path& path) {
     neuralNetwork->setBlobPath(path);
     detectionParser->setBlobPath(path);
 }
@@ -177,12 +174,12 @@ void DetectionNetwork::setBlob(OpenVINO::Blob blob) {
     detectionParser->setBlob(blob);
 }
 
-void DetectionNetwork::setBlob(const dai::Path& path) {
+void DetectionNetwork::setBlob(const std::filesystem::path& path) {
     neuralNetwork->setBlob(path);
     detectionParser->setBlob(path);
 }
 
-void DetectionNetwork::setModelPath(const dai::Path& modelPath) {
+void DetectionNetwork::setModelPath(const std::filesystem::path& modelPath) {
     neuralNetwork->setModelPath(modelPath);
     detectionParser->setModelPath(modelPath);
 }
@@ -238,72 +235,6 @@ std::vector<std::pair<Node::Input&, std::shared_ptr<Capability>>> DetectionNetwo
 
 std::optional<std::vector<std::string>> DetectionNetwork::getClasses() const {
     return detectionParser->getClasses();
-}
-
-//--------------------------------------------------------------------
-// MobileNet
-//--------------------------------------------------------------------
-void MobileNetDetectionNetwork::buildInternal() {
-    DetectionNetwork::buildInternal();
-    detectionParser->properties.parser.nnFamily = DetectionNetworkType::MOBILENET;
-}
-
-//--------------------------------------------------------------------
-// YOLO
-//--------------------------------------------------------------------
-void YoloDetectionNetwork::buildInternal() {
-    DetectionNetwork::buildInternal();
-    detectionParser->properties.parser.nnFamily = DetectionNetworkType::YOLO;
-    detectionParser->properties.parser.iouThreshold = 0.5f;
-}
-
-void YoloDetectionNetwork::setNumClasses(const int numClasses) {
-    detectionParser->setNumClasses(numClasses);
-}
-
-void YoloDetectionNetwork::setCoordinateSize(const int coordinates) {
-    detectionParser->setCoordinateSize(coordinates);
-}
-
-void YoloDetectionNetwork::setAnchors(std::vector<float> anchors) {
-    detectionParser->setAnchors(anchors);
-}
-
-void YoloDetectionNetwork::setAnchorMasks(std::map<std::string, std::vector<int>> anchorMasks) {
-    detectionParser->setAnchorMasks(anchorMasks);
-}
-
-void YoloDetectionNetwork::setAnchors(const std::vector<std::vector<std::vector<float>>>& anchors) {
-    detectionParser->setAnchors(anchors);
-}
-
-void YoloDetectionNetwork::setIouThreshold(float thresh) {
-    detectionParser->setIouThreshold(thresh);
-}
-
-/// Get num classes
-int YoloDetectionNetwork::getNumClasses() const {
-    return detectionParser->getNumClasses();
-}
-
-/// Get coordianate size
-int YoloDetectionNetwork::getCoordinateSize() const {
-    return detectionParser->getCoordinateSize();
-}
-
-/// Get anchors
-std::vector<float> YoloDetectionNetwork::getAnchors() const {
-    return detectionParser->getAnchors();
-}
-
-/// Get anchor masks
-std::map<std::string, std::vector<int>> YoloDetectionNetwork::getAnchorMasks() const {
-    return detectionParser->getAnchorMasks();
-}
-
-/// Get Iou threshold
-float YoloDetectionNetwork::getIouThreshold() const {
-    return detectionParser->getIouThreshold();
 }
 
 }  // namespace node

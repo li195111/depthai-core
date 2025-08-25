@@ -9,13 +9,13 @@ import depthai as dai
 # modelDescription = dai.NNModelDescription(model="yolov6-nano", platform="RVC2", ...)
 
 # Option 2: From yaml file
-modelDescription = dai.NNModelDescription.fromYamlFile("mymodel.yaml")
+modelDescription = dai.NNModelDescription.fromYamlFile("./mymodel.yaml")
 
 # If you want, you can store the model description in a yaml file
-modelDescription.saveToYamlFile("mymodel.yaml")
+modelDescription.saveToYamlFile("./mymodel.yaml")
 
 # Return path to downloaded model - yolov6-nano-r2-288x512.tar.xz for this example
-modelPath = dai.getModelFromZoo(modelDescription, useCached=False)
+modelPath = dai.getModelFromZoo(modelDescription, useCached=False, progressFormat="pretty")
 print(f"Model path: {modelPath}")
 
 # Load the model (most of the time it's a NNArchive)

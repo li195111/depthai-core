@@ -28,7 +28,6 @@ class VideoRecorder {
 
    private:
     bool initialized = false;
-    bool mp4v2Initialized = false;
     unsigned int fps = 0;
     unsigned int width = 0;
     unsigned int height = 0;
@@ -159,7 +158,7 @@ class BytePlayer {
     bool initialized = false;
 };
 
-bool checkRecordConfig(std::string& recordPath, RecordConfig& config);
+bool checkRecordConfig(std::filesystem::path& recordPath, RecordConfig& config);
 
 bool allMatch(const std::vector<std::string>& v1, const std::vector<std::string>& v2);
 

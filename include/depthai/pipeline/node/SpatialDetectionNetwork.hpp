@@ -173,7 +173,7 @@ class SpatialDetectionNetwork : public DeviceNodeCRTP<DeviceNode, SpatialDetecti
      * @throws Error if file doesn't exist or isn't a valid network blob.
      * @param path Path to network blob
      */
-    void setBlobPath(const dai::Path& path);
+    void setBlobPath(const std::filesystem::path& path);
 
     /**
      * Load network blob into assets and use once pipeline is started.
@@ -188,13 +188,13 @@ class SpatialDetectionNetwork : public DeviceNodeCRTP<DeviceNode, SpatialDetecti
      * @throws Error if file doesn't exist or isn't a valid network blob.
      * @param path Path to network blob
      */
-    void setBlob(const dai::Path& path);
+    void setBlob(const std::filesystem::path& path);
 
     /**
      * Load network file into assets.
      * @param modelPath Path to the model file.
      */
-    void setModelPath(const dai::Path& modelPath);
+    void setModelPath(const std::filesystem::path& modelPath);
 
     /**
      * Specifies how many frames will be available in the pool
@@ -293,51 +293,6 @@ class SpatialDetectionNetwork : public DeviceNodeCRTP<DeviceNode, SpatialDetecti
     void setNNArchiveOther(const NNArchive& nnArchive);
     NNArchive createNNArchive(NNModelDescription& modelDesc);
     void alignDepth(const std::shared_ptr<StereoDepth>& stereo, const std::shared_ptr<Camera>& camera);
-
-   protected:
-    using DeviceNodeCRTP::DeviceNodeCRTP;
-};
-
-/**
- * MobileNetSpatialDetectionNetwork node. Mobilenet-SSD based network with spatial location data.
- */
-class MobileNetSpatialDetectionNetwork : public DeviceNodeCRTP<SpatialDetectionNetwork, MobileNetSpatialDetectionNetwork, SpatialDetectionNetworkProperties> {
-   public:
-    void buildInternal() override;
-
-   protected:
-    using DeviceNodeCRTP::DeviceNodeCRTP;
-};
-
-/**
- * YoloSpatialDetectionNetwork node. Yolo-based network with spatial location data.
- */
-class YoloSpatialDetectionNetwork : public DeviceNodeCRTP<SpatialDetectionNetwork, YoloSpatialDetectionNetwork, SpatialDetectionNetworkProperties> {
-   public:
-    /// Set num classes
-    void setNumClasses(const int numClasses);
-    /// Set coordianate size
-    void setCoordinateSize(const int coordinates);
-    /// Set anchors
-    void setAnchors(std::vector<float> anchors);
-    /// Set anchor masks
-    void setAnchorMasks(std::map<std::string, std::vector<int>> anchorMasks);
-    /// Set Iou threshold
-    void setIouThreshold(float thresh);
-
-    /// Get num classes
-    int getNumClasses() const;
-
-    /// Get coordianate size
-    int getCoordinateSize() const;
-    /// Get anchors
-    std::vector<float> getAnchors() const;
-    /// Get anchor masks
-    std::map<std::string, std::vector<int>> getAnchorMasks() const;
-    /// Get Iou threshold
-    float getIouThreshold() const;
-
-    void buildInternal() override;
 
    protected:
     using DeviceNodeCRTP::DeviceNodeCRTP;

@@ -4,9 +4,12 @@ include(cmake/depthaiOptions.cmake)
 
 if(WIN32)
     add_compile_options(/MP)
+    set(CMAKE_DEBUG_POSTFIX "d" CACHE STRING "Postfix for debug libraries" FORCE)
 endif()
 
 find_program(CCACHE_PROGRAM ccache)
+
+set(CMAKE_POLICY_VERSION_MINIMUM 3.5) # Support for CMake 4
 
 if(CCACHE_PROGRAM)
     message(STATUS "Using ccache: ${CCACHE_PROGRAM}")
@@ -33,6 +36,8 @@ endif()
 # endif()
 message(STATUS "DEPTHAI_BOOTSTRAP_VCPKG is OFF")
 
+# Minimal supported macOS SDK version for both arm64 and x86_64
+set(CMAKE_OSX_DEPLOYMENT_TARGET 11.0)
 
 # Set type to canonicalize relative paths for user-provided toolchain
 set(CMAKE_TOOLCHAIN_FILE "" CACHE FILEPATH "CMake toolchain path")
@@ -61,8 +66,8 @@ endif()
 
 # Create depthai project
 project(depthai VERSION "3.0.0" LANGUAGES CXX C)
-set(DEPTHAI_PRE_RELEASE_TYPE "alpha") # Valid options are "alpha", "beta", "rc", ""
-set(DEPTHAI_PRE_RELEASE_VERSION "15")
+set(DEPTHAI_PRE_RELEASE_TYPE "rc") # Valid options are "alpha", "beta", "rc", ""
+set(DEPTHAI_PRE_RELEASE_VERSION "4")
 
 # Set DEPTHAI_VERSION universally, not conditionally
 set(DEPTHAI_VERSION ${PROJECT_VERSION}-${DEPTHAI_PRE_RELEASE_TYPE}.${DEPTHAI_PRE_RELEASE_VERSION})
@@ -188,7 +193,7 @@ set(THIRDPARTY_OPENCV_LIBRARIES "" CACHE STRING "Optional libraries to link Open
 set(TARGET_OPENCV_NAME ${PROJECT_NAME}-opencv)
 set(TARGET_OPENCV_ALIAS opencv)
 if(DEPTHAI_OPENCV_SUPPORT)
-    set(REQUIRED_OPENCV_LIBRARIES "opencv_core" "opencv_imgproc" "opencv_videoio" "opencv_highgui")
+    set(REQUIRED_OPENCV_LIBRARIES "opencv_core" "opencv_imgproc" "opencv_videoio" "opencv_highgui" "opencv_calib3d")
     set(OPENCV_SUPPORT_AVAILABLE ${OpenCV_FOUND})
     foreach(lib ${REQUIRED_OPENCV_LIBRARIES})
         if(NOT (lib IN_LIST OpenCV_LIBS))
@@ -242,8 +247,8 @@ set(TARGET_CORE_SOURCES
     src/pipeline/ThreadedNode.cpp
     src/pipeline/DeviceNode.cpp
     src/pipeline/DeviceNodeGroup.cpp
-    src/pipeline/node/XLinkIn.cpp
-    src/pipeline/node/XLinkOut.cpp
+    src/pipeline/node/internal/XLinkIn.cpp
+    src/pipeline/node/internal/XLinkOut.cpp
     src/pipeline/node/ColorCamera.cpp
     src/pipeline/node/Camera.cpp
     src/pipeline/node/Thermal.cpp
@@ -254,12 +259,10 @@ set(TARGET_CORE_SOURCES
     src/pipeline/node/Sync.cpp
     src/pipeline/node/NeuralNetwork.cpp
     src/pipeline/node/ImageManip.cpp
-    src/pipeline/node/ImageManipV2.cpp
     src/pipeline/node/Warp.cpp
     src/pipeline/node/VideoEncoder.cpp
     src/pipeline/node/DetectionNetwork.cpp
     src/pipeline/node/Script.cpp
-    src/pipeline/node/Pool.cpp
     src/pipeline/node/BenchmarkIn.cpp
     src/pipeline/node/BenchmarkOut.cpp
     src/pipeline/node/SpatialDetectionNetwork.cpp
@@ -277,8 +280,8 @@ set(TARGET_CORE_SOURCES
     src/pipeline/node/test/MyProducer.cpp
     src/pipeline/node/test/MyConsumer.cpp
     src/pipeline/node/UVC.cpp
-    src/pipeline/node/host/XLinkInHost.cpp
-    src/pipeline/node/host/XLinkOutHost.cpp
+    src/pipeline/node/internal/XLinkInHost.cpp
+    src/pipeline/node/internal/XLinkOutHost.cpp
     src/pipeline/node/host/HostNode.cpp
     src/pipeline/node/host/RGBD.cpp
     src/pipeline/datatype/DatatypeEnum.cpp
@@ -289,7 +292,7 @@ set(TARGET_CORE_SOURCES
     src/pipeline/datatype/EncodedFrame.cpp
     src/pipeline/datatype/ImgAnnotations.cpp
     src/pipeline/datatype/ImageManipConfig.cpp
-    src/pipeline/datatype/ImageManipConfigV2.cpp
+    src/pipeline/datatype/ImageFiltersConfig.cpp
     src/pipeline/datatype/CameraControl.cpp
     src/pipeline/datatype/NNData.cpp
     src/pipeline/datatype/ImgDetections.cpp
@@ -310,15 +313,16 @@ set(TARGET_CORE_SOURCES
     src/pipeline/datatype/ToFConfig.cpp
     src/pipeline/datatype/BenchmarkReport.cpp
     src/pipeline/datatype/PointCloudConfig.cpp
+    src/pipeline/datatype/ObjectTrackerConfig.cpp
     src/pipeline/datatype/PointCloudData.cpp
     src/pipeline/datatype/RGBDData.cpp
     src/pipeline/datatype/MessageGroup.cpp
     src/pipeline/datatype/TransformData.cpp
     src/utility/H26xParsers.cpp
-    src/utility/ImageManipV2Impl.cpp
+    src/utility/ImageManipImpl.cpp
+    src/utility/ObjectTrackerImpl.cpp
     src/utility/Initialization.cpp
     src/utility/Resources.cpp
-    src/utility/Path.cpp
     src/utility/Platform.cpp
     src/utility/RecordReplay.cpp
     src/utility/McapImpl.cpp
@@ -369,6 +373,7 @@ set(TARGET_OPENCV_SOURCES
     src/pipeline/node/host/HostCamera.cpp
     src/pipeline/node/host/Record.cpp
     src/pipeline/node/host/Replay.cpp
+    src/pipeline/node/ImageFilters.cpp
     src/opencv/RecordReplay.cpp
     src/opencv/HolisticRecordReplay.cpp
 )
@@ -699,6 +704,7 @@ target_link_libraries(${TARGET_CORE_NAME}
         magic_enum::magic_enum
         liblzma::liblzma
         lz4::lz4
+        Eigen3::Eigen
 )
 
 if(DEPTHAI_ENABLE_MP4V2)
@@ -797,14 +803,16 @@ macro(add_runtime_dependencies depending_target dependency)
     if(TARGET ${dependency})
         get_property(imported_configs TARGET ${dependency} PROPERTY IMPORTED_CONFIGURATIONS)
         set(dlls "")
+        message(STATUS "Adding runtime dependencies for ${depending_target} on ${dependency}. Imported configurations: ${imported_configs}")
         foreach(cfg ${imported_configs})
+            message(STATUS "Adding runtime dependencies for ${depending_target} on ${dependency} (${cfg})")
             get_property(dll TARGET ${dependency} PROPERTY IMPORTED_LOCATION_${cfg})
-            set(dlls ${depthai_dll_libraries} $<$<CONFIG:${cfg}>:${dll}>)
+            list(APPEND dlls $<$<CONFIG:${cfg}>:${dll}>)
         endforeach()
+        message(STATUS "Required dlls for ${depending_target} on ${dependency} are: ${dlls}")
     endif()
-    set(depthai_dll_libraries "")
     # Create a list of required dll files
-    set(required_dll_files ${dlls} ${depthai_dll_libraries})
+    set(required_dll_files ${dlls})
     # Copy the required dlls
     if(WIN32)
         add_custom_command(TARGET ${depending_target} POST_BUILD COMMAND

@@ -58,7 +58,6 @@ EMSCRIPTEN_BINDINGS(depthai_js) {
         .value("EncodedFrame", dai::DatatypeEnum::EncodedFrame)
         .value("NNData", dai::DatatypeEnum::NNData)
         .value("ImageManipConfig", dai::DatatypeEnum::ImageManipConfig)
-        .value("ImageManipConfigV2", dai::DatatypeEnum::ImageManipConfig)
         .value("CameraControl", dai::DatatypeEnum::CameraControl)
         .value("ImgDetections", dai::DatatypeEnum::ImgDetections)
         .value("SpatialImgDetections", dai::DatatypeEnum::SpatialImgDetections)
@@ -77,7 +76,8 @@ EMSCRIPTEN_BINDINGS(depthai_js) {
         .value("ToFConfig", dai::DatatypeEnum::ToFConfig)
         .value("TrackedFeatures", dai::DatatypeEnum::TrackedFeatures)
         .value("BenchmarkReport", dai::DatatypeEnum::BenchmarkReport)
-        .value("MessageGroup", dai::DatatypeEnum::MessageGroup);
+        .value("MessageGroup", dai::DatatypeEnum::MessageGroup)
+        .value("ImageFiltersConfig", dai::DatatypeEnum::ImageFiltersConfig);
 
     // structs
     value_object<MessageHeader>("MessageHeader")

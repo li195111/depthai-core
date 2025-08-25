@@ -52,6 +52,7 @@ option(DEPTHAI_XTENSOR_EXTERNAL "Use external xtensor library" ${USE_EXTERNAL_IN
 
 # ---------- Platform / Compiler Tweaks ---------
 
+
 # AprilTag node support
 set(DEPTHAI_HAS_APRIL_TAG ${DEPTHAI_ENABLE_APRIL_TAG})
 if(WIN32)
@@ -75,7 +76,7 @@ endif()
 # ---------- Remote connection options
 if(DEPTHAI_ENABLE_PROTOBUF)
     option(DEPTHAI_ENABLE_REMOTE_CONNECTION "Enable Remote Connection support" ON)
-    if(DEPTHAI_ENABLE_CURL AND DEPTHAI_HAVE_OPENCV_SUPPORT)
+    if(DEPTHAI_ENABLE_CURL AND DEPTHAI_OPENCV_SUPPORT)
         option(DEPTHAI_ENABLE_EVENTS_MANAGER "Enable Events Manager" ON)
     else()
         message(STATUS "Events Manager disabled because Protobuf & curl support is disabled.")

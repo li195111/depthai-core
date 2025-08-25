@@ -67,7 +67,6 @@ inline std::shared_ptr<Buffer> getMessage(const std::shared_ptr<google::protobuf
         case DatatypeEnum::Buffer:
         case DatatypeEnum::NNData:
         case DatatypeEnum::ImageManipConfig:
-        case DatatypeEnum::ImageManipConfigV2:
         case DatatypeEnum::CameraControl:
         case DatatypeEnum::ImgDetections:
         case DatatypeEnum::SpatialImgDetections:
@@ -90,7 +89,10 @@ inline std::shared_ptr<Buffer> getMessage(const std::shared_ptr<google::protobuf
         case DatatypeEnum::PointCloudConfig:
         case DatatypeEnum::ImageAlignConfig:
         case DatatypeEnum::ImgAnnotations:
+        case DatatypeEnum::ImageFiltersConfig:
+        case DatatypeEnum::ToFDepthConfidenceFilterConfig:
         case DatatypeEnum::RGBDData:
+        case DatatypeEnum::ObjectTrackerConfig:
             break;
     }
     throw std::runtime_error("Cannot replay message type: " + std::to_string((int)datatype));
@@ -130,7 +132,6 @@ inline std::shared_ptr<google::protobuf::Message> getProtoMessage(utility::ByteP
         case DatatypeEnum::Buffer:
         case DatatypeEnum::NNData:
         case DatatypeEnum::ImageManipConfig:
-        case DatatypeEnum::ImageManipConfigV2:
         case DatatypeEnum::CameraControl:
         case DatatypeEnum::ImgDetections:
         case DatatypeEnum::SpatialImgDetections:
@@ -153,7 +154,10 @@ inline std::shared_ptr<google::protobuf::Message> getProtoMessage(utility::ByteP
         case DatatypeEnum::PointCloudConfig:
         case DatatypeEnum::ImageAlignConfig:
         case DatatypeEnum::ImgAnnotations:
+        case DatatypeEnum::ImageFiltersConfig:
+        case DatatypeEnum::ToFDepthConfidenceFilterConfig:
         case DatatypeEnum::RGBDData:
+        case DatatypeEnum::ObjectTrackerConfig:
             throw std::runtime_error("Cannot replay message type: " + std::to_string((int)datatype));
     }
     return {};

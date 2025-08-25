@@ -42,6 +42,7 @@ void delImplicitPipeline() {
 // Map of python node classes and call to pipeline to create it
 std::vector<std::pair<py::handle, std::function<std::shared_ptr<dai::Node>(dai::Pipeline&, py::object class_)>>> pyNodeCreateMap;
 py::handle daiNodeModule;
+py::handle daiNodeInternalModule;
 
 std::vector<std::pair<py::handle, std::function<std::shared_ptr<dai::Node>(dai::Pipeline&, py::object class_)>>> NodeBindings::getNodeCreateMap() {
     return pyNodeCreateMap;
@@ -126,8 +127,6 @@ py::class_<Map, holder_type> bindNodeMap(py::handle scope, const std::string& na
     return cl;
 }
 
-void bind_xlinkin(pybind11::module& m, void* pCallstack);
-void bind_xlinkout(pybind11::module& m, void* pCallstack);
 void bind_benchmark(pybind11::module& m, void* pCallstack);
 void bind_colorcamera(pybind11::module& m, void* pCallstack);
 void bind_camera(pybind11::module& m, void* pCallstack);
@@ -136,7 +135,6 @@ void bind_stereodepth(pybind11::module& m, void* pCallstack);
 void bind_neuralnetwork(pybind11::module& m, void* pCallstack);
 void bind_videoencoder(pybind11::module& m, void* pCallstack);
 void bind_imagemanip(pybind11::module& m, void* pCallstack);
-void bind_imagemanipv2(pybind11::module& m, void* pCallstack);
 void bind_warp(pybind11::module& m, void* pCallstack);
 void bind_spiout(pybind11::module& m, void* pCallstack);
 void bind_spiin(pybind11::module& m, void* pCallstack);
@@ -159,6 +157,7 @@ void bind_sync(pybind11::module& m, void* pCallstack);
 void bind_messagedemux(pybind11::module& m, void* pCallstack);
 void bind_hostnode(pybind11::module& m, void* pCallstack);
 void bind_record(pybind11::module& m, void* pCallstack);
+void bind_imagefilters(pybind11::module& m, void* pCallstack);
 void bind_replay(pybind11::module& m, void* pCallstack);
 void bind_imagealign(pybind11::module& m, void* pCallstack);
 void bind_rgbd(pybind11::module& m, void* pCallstack);
@@ -174,8 +173,6 @@ void NodeBindings::addToCallstack(std::deque<StackFunction>& callstack) {
     callstack.push_front(NodeBindings::bind);
 
     // Bind all other nodes
-    callstack.push_front(bind_xlinkin);
-    callstack.push_front(bind_xlinkout);
     callstack.push_front(bind_benchmark);
     callstack.push_front(bind_colorcamera);
     callstack.push_front(bind_camera);
@@ -184,7 +181,6 @@ void NodeBindings::addToCallstack(std::deque<StackFunction>& callstack) {
     callstack.push_front(bind_neuralnetwork);
     callstack.push_front(bind_videoencoder);
     callstack.push_front(bind_imagemanip);
-    callstack.push_front(bind_imagemanipv2);
     callstack.push_front(bind_warp);
     callstack.push_front(bind_spiout);
     callstack.push_front(bind_spiin);
@@ -207,6 +203,7 @@ void NodeBindings::addToCallstack(std::deque<StackFunction>& callstack) {
     callstack.push_front(bind_messagedemux);
     callstack.push_front(bind_hostnode);
     callstack.push_front(bind_record);
+    callstack.push_front(bind_imagefilters);
     callstack.push_front(bind_replay);
     callstack.push_front(bind_imagealign);
     callstack.push_front(bind_rgbd);
@@ -226,6 +223,7 @@ void NodeBindings::bind(pybind11::module& m, void* pCallstack) {
     //// Bindings for actual nodes
     // Move properties into nodes and nodes under 'node' submodule
     daiNodeModule = m.def_submodule("node");
+    daiNodeInternalModule = m.def_submodule("node").def_submodule("internal");
 
     // Properties
     py::class_<Node, std::shared_ptr<Node>> pyNode(m, "Node", DOC(dai, Node));
@@ -383,6 +381,7 @@ void NodeBindings::bind(pybind11::module& m, void* pCallstack) {
         .def("link", static_cast<void (Node::Output::*)(Node::Input&)>(&Node::Output::link), py::arg("input"), DOC(dai, Node, Output, link))
         .def("unlink", static_cast<void (Node::Output::*)(Node::Input&)>(&Node::Output::unlink), py::arg("input"), DOC(dai, Node, Output, unlink))
         .def("send", &Node::Output::send, py::arg("msg"), DOC(dai, Node, Output, send), py::call_guard<py::gil_scoped_release>())
+        .def("getName", &Node::Output::getName, DOC(dai, Node, Output, getName))
         .def("trySend", &Node::Output::trySend, py::arg("msg"), DOC(dai, Node, Output, trySend));
 
     nodeConnection.def_readwrite("outputId", &Node::Connection::outputId, DOC(dai, Node, Connection, outputId))

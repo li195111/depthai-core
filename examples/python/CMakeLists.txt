@@ -14,6 +14,10 @@ endif()
 
 set(TARGET_NAME "depthai")
 
+# Regexes for example test failure
+set(STRICT_EXAMPLE_TEST_FAIL_REGEX "\\[warning\\];\\[error\\];\\[critical\\]")
+set(RELAXED_EXAMPLE_TEST_FAIL_REGEX "\\[error\\];\\[critical\\]")
+
 # Add a target to install_requirements (added to ALL)
 # For windows we don't install open3d-cpu
 if(WIN32)
@@ -87,7 +91,7 @@ function(add_python_example example_name python_script_path)
         add_dependencies(${example_name} test_wrapper)
 
         # Sets a regex catching any logged warnings, errors or critical (coming either from device or host)
-        set_tests_properties (${example_name} PROPERTIES FAIL_REGULAR_EXPRESSION "\\[warning\\];\\[error\\];\\[critical\\]")
+        set_tests_properties (${example_name} PROPERTIES FAIL_REGULAR_EXPRESSION ${STRICT_EXAMPLE_TEST_FAIL_REGEX})
 
     endif()
 
@@ -134,9 +138,16 @@ if(DEPTHAI_PYTHON_TEST_EXAMPLES)
     )
 
     # Sets a regex catching any logged warnings, errors or critical (coming either from device or host)
-    set_tests_properties (install_requirements PROPERTIES FAIL_REGULAR_EXPRESSION "\\[warning\\];\\[error\\];\\[critical\\]")
+    set_tests_properties (install_requirements PROPERTIES FAIL_REGULAR_EXPRESSION "${STRICT_EXAMPLE_TEST_FAIL_REGEX}")
 
 endif()
+
+function(dai_example_test_relax_fail_regex example_name)
+    set(example_name "py_${example_name}")
+    if(DEPTHAI_PYTHON_TEST_EXAMPLES AND TEST ${example_name})
+        set_tests_properties(${example_name} PROPERTIES FAIL_REGULAR_EXPRESSION "${RELAXED_EXAMPLE_TEST_FAIL_REGEX}")
+    endif()
+endfunction()
 
 
 ## Camera output
@@ -160,6 +171,9 @@ dai_set_example_test_labels(camera_still_max_res ondevice rvc2_all rvc4 ci)
 
 add_python_example(camera_max_resolution Camera/camera_max_resolution.py)
 dai_set_example_test_labels(camera_max_resolution ondevice rvc2_all rvc4 ci)
+
+add_python_example(camera_undistortion Camera/camera_undistortion.py)
+dai_set_example_test_labels(camera_undistortion ondevice rvc2_all rvc4 ci)
 
 ## AprilTags
 add_python_example(april_tags_12mp AprilTags/april_tags_12mp.py)
@@ -191,19 +205,26 @@ add_python_example(threaded_host_nodes HostNodes/threaded_host_nodes.py)
 dai_set_example_test_labels(threaded_host_nodes ondevice rvc2_all rvc4 ci)
 
 ## ImageManip
-add_python_example(image_manip_v2_multi_ops ImageManip/image_manip_v2_multi_ops.py)
-dai_set_example_test_labels(image_manip_v2_multi_ops ondevice rvc2_all rvc4 ci)
+add_python_example(image_manip_multi_ops ImageManip/image_manip_multi_ops.py)
+dai_set_example_test_labels(image_manip_multi_ops ondevice rvc2_all rvc4 ci)
 
-add_python_example(image_manip_resize ImageManip/image_manip_v2_resize.py)
+add_python_example(image_manip_resize ImageManip/image_manip_resize.py)
 dai_set_example_test_labels(image_manip_resize ondevice rvc2_all rvc4 ci)
 
-add_python_example(image_manip_remap ImageManip/image_manip_v2_remap.py)
+add_python_example(image_manip_remap ImageManip/image_manip_remap.py)
 dai_set_example_test_labels(image_manip_remap ondevice rvc2_all rvc4 ci)
 
 ## Misc
 add_python_example(reconnect_callback Misc/AutoReconnect/reconnect_callback.py)
 dai_set_example_test_labels(reconnect_callback ondevice rvc2_all rvc4 ci)
 
+## SystemLogger
+add_python_example(system_logger RVC2/SystemLogger/system_information.py)
+dai_set_example_test_labels(system_logger ondevice rvc2_all ci)
+
+## EdgeDetector
+add_python_example(edge_detector RVC2/EdgeDetector/edge_detector.py)
+dai_set_example_test_labels(edge_detector ondevice rvc2_all ci)
 
 ## RGBD
 add_python_example(rgbd RGBD/rgbd.py)
@@ -277,7 +298,7 @@ dai_set_example_test_labels(custom_services ondevice rvc2_all rvc4 ci nowindows)
 ## Script node
 add_python_example(script_simple Script/script_simple.py)
 dai_set_example_test_labels(script_simple ondevice rvc2_all rvc4 ci)
-set_tests_properties(py_script_simple PROPERTIES FAIL_REGULAR_EXPRESSION "\\[error\\];\\[critical\\]")
+dai_example_test_relax_fail_regex(script_simple)
 
 add_python_example(script_all_cameras Script/script_switch_all_cameras.py)
 dai_set_example_test_labels(script_all_cameras ondevice rvc2_all rvc4 ci)
@@ -285,11 +306,11 @@ dai_set_example_test_labels(script_all_cameras ondevice rvc2_all rvc4 ci)
 ## Benchmark node
 add_python_example(benchmark_node Benchmark/benchmark_simple.py)
 dai_set_example_test_labels(benchmark_node ondevice rvc2_all rvc4 ci)
-set_tests_properties(py_benchmark_node PROPERTIES FAIL_REGULAR_EXPRESSION "\\[error\\];\\[critical\\]")
+dai_example_test_relax_fail_regex(benchmark_node)
 
 add_python_example(benchmark_cameras Benchmark/benchmark_camera.py)
 dai_set_example_test_labels(benchmark_cameras ondevice rvc2_all rvc4 ci)
-set_tests_properties(py_benchmark_cameras PROPERTIES FAIL_REGULAR_EXPRESSION "\\[error\\];\\[critical\\]")
+dai_example_test_relax_fail_regex(benchmark_cameras)
 
 add_python_example(benchmark_nn Benchmark/benchmark_nn.py)
 dai_set_example_test_labels(benchmark_nn ondevice rvc2_all rvc4 ci)
@@ -298,7 +319,7 @@ dai_set_example_test_labels(benchmark_nn ondevice rvc2_all rvc4 ci)
 add_python_example(imu_gyroscope_accelerometer IMU/imu_gyroscope_accelerometer.py)
 dai_set_example_test_labels(imu_gyroscope_accelerometer rvc2_all rvc4 ci)
 # On slow hosts the examples warns that batch size is too small
-set_tests_properties(py_imu_gyroscope_accelerometer PROPERTIES FAIL_REGULAR_EXPRESSION "\\[error\\];\\[critical\\]")
+dai_example_test_relax_fail_regex(imu_gyroscope_accelerometer)
 
 # Warp node
 add_python_example(warp_mesh Warp/warp_mesh.py)
@@ -307,3 +328,13 @@ dai_set_example_test_labels(warp_mesh rvc2_all rvc4 ci)
 # Feature tracker
 add_python_example(feature_tracker FeatureTracker/feature_tracker.py)
 dai_set_example_test_labels(feature_tracker rvc2_all rvc4 ci)
+
+# Object tracker
+add_python_example(object_tracker ObjectTracker/object_tracker.py)
+dai_set_example_test_labels(object_tracker ondevice rvc2_all rvc4 ci)
+add_python_example(object_tracker_replay ObjectTracker/object_tracker_replay.py)
+dai_set_example_test_labels(object_tracker_replay ondevice rvc2_all rvc4 ci)
+
+# ImageFilters
+add_python_example(image_filters StereoDepth/stereo_depth_filters.py)
+dai_set_example_test_labels(image_filters rvc2_all rvc4 ci)

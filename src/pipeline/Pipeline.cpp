@@ -4,10 +4,10 @@
 
 #include "depthai/device/CalibrationHandler.hpp"
 #include "depthai/pipeline/ThreadedHostNode.hpp"
-#include "depthai/pipeline/node/XLinkIn.hpp"
-#include "depthai/pipeline/node/XLinkOut.hpp"
-#include "depthai/pipeline/node/host/XLinkInHost.hpp"
-#include "depthai/pipeline/node/host/XLinkOutHost.hpp"
+#include "depthai/pipeline/node/internal/XLinkIn.hpp"
+#include "depthai/pipeline/node/internal/XLinkInHost.hpp"
+#include "depthai/pipeline/node/internal/XLinkOut.hpp"
+#include "depthai/pipeline/node/internal/XLinkOutHost.hpp"
 #include "depthai/utility/Initialization.hpp"
 #include "pipeline/datatype/ImgFrame.hpp"
 #include "pipeline/node/DetectionNetwork.hpp"
@@ -55,6 +55,8 @@ struct hash<::dai::NodeConnectionSchema> {
 }  // namespace std
 
 namespace dai {
+
+namespace fs = std::filesystem;
 
 Node::Id PipelineImpl::getNextUniqueId() {
     return latestId++;
@@ -332,84 +334,13 @@ PipelineSchema PipelineImpl::getPipelineSchema(SerializationType type) const {
     return schema;
 }
 
-bool PipelineImpl::isOpenVINOVersionCompatible(OpenVINO::Version version) const {
-    auto ver = getPipelineOpenVINOVersion();
-    if(ver) {
-        return OpenVINO::areVersionsBlobCompatible(version, *ver);
-    } else {
-        return true;
-    }
-}
-
-/// Get possible OpenVINO version to run this pipeline
-OpenVINO::Version PipelineImpl::getOpenVINOVersion() const {
-    return getPipelineOpenVINOVersion().value_or(OpenVINO::DEFAULT_VERSION);
-}
-
-/// Get required OpenVINO version to run this pipeline. Can be none
-std::optional<OpenVINO::Version> PipelineImpl::getRequiredOpenVINOVersion() const {
-    return getPipelineOpenVINOVersion();
-}
-
-std::optional<OpenVINO::Version> PipelineImpl::getPipelineOpenVINOVersion() const {
-    // Loop over nodes, and get the required information
-    std::optional<OpenVINO::Version> version;
-    std::string lastNodeNameWithRequiredVersion = "";
-    Node::Id lastNodeIdWithRequiredVersion = -1;
-
-    for(const auto& node : nodes) {
-        // Check the required openvino version
-        auto requiredVersion = node->getRequiredOpenVINOVersion();
-        if(requiredVersion) {
-            if(forceRequiredOpenVINOVersion) {
-                // Check that forced openvino version is compatible with this nodes required version
-                if(!OpenVINO::areVersionsBlobCompatible(*requiredVersion, *forceRequiredOpenVINOVersion)) {
-                    std::string err = fmt::format("Pipeline - '{}' node with id: {}, isn't compatible with forced OpenVINO version", node->getName(), node->id);
-                    throw std::logic_error(err.c_str());
-                }
-            } else {
-                // Keep track of required openvino versions, and make sure that they are all compatible
-                if(!version) {
-                    version = *requiredVersion;
-                    lastNodeIdWithRequiredVersion = node->id;
-                    lastNodeNameWithRequiredVersion = node->getName();
-                } else {
-                    // if some node already has an required version, then compare if they are compatible
-                    if(!OpenVINO::areVersionsBlobCompatible(*version, *requiredVersion)) {
-                        // if not compatible, then throw an error
-                        std::string err = fmt::format("Pipeline - OpenVINO version required by '{}' node (id: {}), isn't compatible with '{}' node (id: {})",
-                                                      lastNodeNameWithRequiredVersion,
-                                                      lastNodeIdWithRequiredVersion,
-                                                      node->getName(),
-                                                      node->id);
-                        throw std::logic_error(err.c_str());
-                    }
-                }
-            }
-        }
-    }
-
-    // After iterating over, return appropriate version
-    if(forceRequiredOpenVINOVersion) {
-        // Return forced version
-        return forceRequiredOpenVINOVersion;
-    } else if(version) {
-        // Return detected version
-        return version;
-    } else {
-        // Return null
-        return std::nullopt;
-    }
-}
-
 Device::Config PipelineImpl::getDeviceConfig() const {
     Device::Config config;
-    config.version = getPipelineOpenVINOVersion().value_or(OpenVINO::VERSION_UNIVERSAL);
     config.board = board;
     return config;
 }
 
-void PipelineImpl::setCameraTuningBlobPath(const dai::Path& path) {
+void PipelineImpl::setCameraTuningBlobPath(const fs::path& path) {
     std::string assetKey = "camTuning";
 
     auto asset = assetManager.set(assetKey, path);
@@ -494,10 +425,7 @@ bool PipelineImpl::canConnect(const Node::Output& out, const Node::Input& in) {
 }
 
 void PipelineImpl::setCalibrationData(CalibrationHandler calibrationDataHandler) {
-    /* if(!calibrationDataHandler.validateCameraArray()) {
-        throw std::runtime_error("Failed to validate the extrinsics connection. Enable debug mode for more information.");
-    } */
-    globalProperties.calibData = calibrationDataHandler.getEepromData();
+    setEepromData(calibrationDataHandler.getEepromData());
 }
 
 bool PipelineImpl::isCalibrationDataAvailable() const {
@@ -513,11 +441,18 @@ CalibrationHandler PipelineImpl::getCalibrationData() const {
 }
 
 void PipelineImpl::setEepromData(std::optional<EepromData> eepromData) {
+    std::unique_lock<std::mutex> lock(calibMtx);
     globalProperties.calibData = eepromData;
+    globalProperties.eepromId += 1;  // Increment eepromId to indicate that eeprom data has changed
 }
 
 std::optional<EepromData> PipelineImpl::getEepromData() const {
     return globalProperties.calibData;
+}
+
+uint32_t PipelineImpl::getEepromId() const {
+    std::unique_lock<std::mutex> lock(calibMtx);
+    return globalProperties.eepromId;
 }
 
 bool PipelineImpl::isHostOnly() const {
@@ -604,8 +539,8 @@ void PipelineImpl::build() {
     isBuild = true;
 
     if(defaultDevice) {
-        std::string recordPath = utility::getEnvAs<std::string>("DEPTHAI_RECORD", "");
-        std::string replayPath = utility::getEnvAs<std::string>("DEPTHAI_REPLAY", "");
+        auto recordPath = std::filesystem::path(utility::getEnvAs<std::string>("DEPTHAI_RECORD", ""));
+        auto replayPath = std::filesystem::path(utility::getEnvAs<std::string>("DEPTHAI_REPLAY", ""));
 
         if(defaultDevice->getDeviceInfo().platform == XLinkPlatform_t::X_LINK_MYRIAD_2
            || defaultDevice->getDeviceInfo().platform == XLinkPlatform_t::X_LINK_MYRIAD_X
@@ -729,13 +664,13 @@ void PipelineImpl::build() {
 
     // Create a map of already visited nodes to only create one xlink bridge
     struct XLinkOutBridge {
-        std::shared_ptr<node::XLinkOut> xLinkOut;
-        std::shared_ptr<node::XLinkInHost> xLinkInHost;
+        std::shared_ptr<node::internal::XLinkOut> xLinkOut;
+        std::shared_ptr<node::internal::XLinkInHost> xLinkInHost;
     };
 
     struct XLinkInBridge {
-        std::shared_ptr<node::XLinkOutHost> xLinkOutHost;
-        std::shared_ptr<node::XLinkIn> xLinkIn;
+        std::shared_ptr<node::internal::XLinkOutHost> xLinkOutHost;
+        std::shared_ptr<node::internal::XLinkIn> xLinkIn;
     };
 
     std::unordered_map<dai::Node::Output*, XLinkOutBridge> bridgesOut;
@@ -753,8 +688,8 @@ void PipelineImpl::build() {
             if(bridgesOut.count(connection.out) == 0) {  // If the bridge does not already exist, create one
                 // // Create a new bridge
                 bridgesOut[connection.out] = XLinkOutBridge{
-                    create<node::XLinkOut>(shared_from_this()),
-                    create<node::XLinkInHost>(shared_from_this()),
+                    create<node::internal::XLinkOut>(shared_from_this()),
+                    create<node::internal::XLinkInHost>(shared_from_this()),
                 };
                 auto& xLinkBridge = bridgesOut[connection.out];
                 auto streamName = fmt::format("__x_{}_{}_{}", outNode->id, connection.outputGroup, connection.outputName);
@@ -777,8 +712,8 @@ void PipelineImpl::build() {
             if(bridgesIn.count(connection.in) == 0) {  // If the bridge does not already exist, create one
                 // // Create a new bridge
                 bridgesIn[connection.in] = XLinkInBridge{
-                    create<node::XLinkOutHost>(shared_from_this()),
-                    create<node::XLinkIn>(shared_from_this()),
+                    create<node::internal::XLinkOutHost>(shared_from_this()),
+                    create<node::internal::XLinkIn>(shared_from_this()),
                 };
                 auto& xLinkBridge = bridgesIn[connection.in];
                 auto streamName = fmt::format("__x_{}_{}_{}", inNode->id, connection.inputGroup, connection.inputName);
@@ -817,8 +752,8 @@ void PipelineImpl::build() {
                 if(bridgesOut.count(queueConnection.output) == 0) {
                     // // Create a new bridge
                     bridgesOut[queueConnection.output] = XLinkOutBridge{
-                        create<node::XLinkOut>(shared_from_this()),
-                        create<node::XLinkInHost>(shared_from_this()),
+                        create<node::internal::XLinkOut>(shared_from_this()),
+                        create<node::internal::XLinkInHost>(shared_from_this()),
                     };
                     auto& xLinkBridge = bridgesOut[queueConnection.output];
                     auto streamName = fmt::format("__x_{}_{}", node->id, output->getName());
@@ -883,9 +818,9 @@ void PipelineImpl::resetConnections() {
     if(defaultDevice->getConnection() == nullptr) throw std::runtime_error("Connection lost");
     auto con = defaultDevice->getConnection();
     for(auto node : getAllNodes()) {
-        auto tmp = std::dynamic_pointer_cast<node::XLinkInHost>(node);
+        auto tmp = std::dynamic_pointer_cast<node::internal::XLinkInHost>(node);
         if(tmp) tmp->setConnection(con);
-        auto tmp2 = std::dynamic_pointer_cast<node::XLinkOutHost>(node);
+        auto tmp2 = std::dynamic_pointer_cast<node::internal::XLinkOutHost>(node);
         if(tmp2) tmp2->setConnection(con);
     }
 
@@ -898,9 +833,9 @@ void PipelineImpl::resetConnections() {
 void PipelineImpl::disconnectXLinkHosts() {
     // make connections throw instead of reconnecting
     for(auto node : getAllNodes()) {
-        auto tmp = std::dynamic_pointer_cast<node::XLinkInHost>(node);
+        auto tmp = std::dynamic_pointer_cast<node::internal::XLinkInHost>(node);
         if(tmp) tmp->disconnect();
-        auto tmp2 = std::dynamic_pointer_cast<node::XLinkOutHost>(node);
+        auto tmp2 = std::dynamic_pointer_cast<node::internal::XLinkOutHost>(node);
         if(tmp2) tmp2->disconnect();
     }
 }
@@ -948,18 +883,18 @@ PipelineImpl::~PipelineImpl() {
     wait();
 
     if(recordConfig.state == RecordConfig::RecordReplayState::RECORD) {
-        std::vector<std::string> filenames = {recordReplayFilenames["record_config"]};
+        std::vector<std::filesystem::path> filenames = {recordReplayFilenames["record_config"]};
         std::vector<std::string> outFiles = {"record_config.json"};
         filenames.reserve(recordReplayFilenames.size() * 2 + 1);
         outFiles.reserve(recordReplayFilenames.size() * 2 + 1);
         for(auto& rstr : recordReplayFilenames) {
             if(rstr.first != "record_config") {
                 std::string nodeName = rstr.first.substr(2);
-                std::string filePath = rstr.second;
-                filenames.push_back(filePath + ".mcap");
+                std::filesystem::path filePath = rstr.second;
+                filenames.push_back(std::filesystem::path(filePath).concat(".mcap"));
                 outFiles.push_back(nodeName + ".mcap");
                 if(rstr.first[0] == 'v') {
-                    filenames.push_back(filePath + ".mp4");
+                    filenames.push_back(std::filesystem::path(filePath).concat(".mp4"));
                     outFiles.push_back(nodeName + ".mp4");
                 }
             }
@@ -970,17 +905,18 @@ PipelineImpl::~PipelineImpl() {
         } catch(const std::exception& e) {
             Logging::getInstance().logger.error("Record: Failed to create tar file: {}", e.what());
         }
-        std::remove(platform::joinPaths(recordConfig.outputDir, "record_config.json").c_str());
+        std::filesystem::remove(platform::joinPaths(recordConfig.outputDir, "record_config.json"));
     }
 
     if(removeRecordReplayFiles && recordConfig.state != RecordConfig::RecordReplayState::NONE) {
         Logging::getInstance().logger.info("Record and Replay: Removing temporary files");
         for(auto& kv : recordReplayFilenames) {
             if(kv.first != "record_config") {
-                std::remove((kv.second + ".mcap").c_str());
-                std::remove((kv.second + ".mp4").c_str());
-            } else
-                std::remove(kv.second.c_str());
+                std::filesystem::remove(std::filesystem::path(kv.second).concat(".mcap"));
+                std::filesystem::remove(std::filesystem::path(kv.second).concat(".mp4"));
+            } else {
+                std::filesystem::remove(kv.second);
+            }
         }
     }
 }
@@ -993,31 +929,31 @@ void PipelineImpl::run() {
     wait();
 }
 
-std::vector<uint8_t> PipelineImpl::loadResource(dai::Path uri) {
+std::vector<uint8_t> PipelineImpl::loadResource(fs::path uri) {
     return loadResourceCwd(uri, "/pipeline");
 }
 
-static dai::Path getAbsUri(dai::Path& uri, dai::Path& cwd) {
+static fs::path getAbsUri(fs::path& uri, fs::path& cwd) {
     int colonLocation = uri.string().find(":");
     std::string resourceType = uri.string().substr(0, colonLocation + 1);
-    dai::Path absAssetUri;
+    fs::path absAssetUri;
     if(uri.string()[colonLocation + 1] == '/') {  // Absolute path
         absAssetUri = uri;
     } else {  // Relative path
-        absAssetUri = dai::Path{resourceType + cwd.string() + uri.string().substr(colonLocation + 1)};
+        absAssetUri = fs::path{resourceType + cwd.string() + uri.string().substr(colonLocation + 1)};
     }
     return absAssetUri;
 }
 
-std::vector<uint8_t> PipelineImpl::loadResourceCwd(dai::Path uri, dai::Path cwd, bool moveAsset) {
+std::vector<uint8_t> PipelineImpl::loadResourceCwd(fs::path uri, fs::path cwd, bool moveAsset) {
     struct ProtocolHandler {
         const char* protocol = nullptr;
-        std::function<std::vector<uint8_t>(PipelineImpl&, const dai::Path&)> handle = nullptr;
+        std::function<std::vector<uint8_t>(PipelineImpl&, const fs::path&)> handle = nullptr;
     };
 
     const std::vector<ProtocolHandler> protocolHandlers = {
         {"asset",
-         [moveAsset](PipelineImpl& p, const dai::Path& uri) -> std::vector<uint8_t> {
+         [moveAsset](PipelineImpl& p, const fs::path& uri) -> std::vector<uint8_t> {
              // First check the pipeline asset manager
              auto asset = p.assetManager.get(uri.u8string());
              if(asset != nullptr) {
@@ -1056,14 +992,14 @@ std::vector<uint8_t> PipelineImpl::loadResourceCwd(dai::Path uri, dai::Path cwd,
             // return handler.handle(this, fullPath.string());
 
             // TODO(themarpe) - use above approach instead
-            dai::Path path;
+            fs::path path;
             if(protocolPrefix == "asset:") {
                 auto absUri = getAbsUri(uri, cwd);
-                path = static_cast<dai::Path>(absUri.u8string().substr(protocolPrefix.size()));
+                path = static_cast<fs::path>(absUri.u8string().substr(protocolPrefix.size()));
             } else {
-                path = static_cast<dai::Path>(uri.u8string().substr(protocolPrefix.size()));
+                path = static_cast<fs::path>(uri.u8string().substr(protocolPrefix.size()));
             }
-            return handler.handle(*this, path.u8string());
+            return handler.handle(*this, path);
         }
     }
 
